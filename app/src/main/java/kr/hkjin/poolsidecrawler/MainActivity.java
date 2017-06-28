@@ -15,6 +15,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,12 +27,14 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
     @BindView(R.id.layout) SwipeRefreshLayout mLayout;
     @BindView(R.id.pager) ViewPager mPager;
 
-    private ArrayList<String> sliderUrls = new ArrayList<>();
-    private ArrayList<String> gridUrls = new ArrayList<>();
+    private List<String> sliderUrls = new ArrayList<>();
+    private List<String> gridUrls = new ArrayList<>();
     private PagerAdapter mPagerAdapter;
 
     private static final String SOURCE_DOMAIN = "http://www.gettyimagesgallery.com";
     private static final String SOURCE_PATH = "/exhibitions/archive/poolside.aspx";
+
+    private PoolSideDBHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +52,11 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
             }
         });
         mLayout.setRefreshing(true);
-        reload();
+        tryLoadFromDB();
+    }
+
+    private void tryLoadFromDB() {
+        new LoadingFromDBTask().execute();
     }
 
     private void reload() {
@@ -58,25 +65,32 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
 
     @Override
     public void onRightClicked() {
-
+        int current = mPager.getCurrentItem();
+        if (current + 1 < mPagerAdapter.getCount()) {
+            mPager.setCurrentItem(current + 1);
+        }
     }
 
     @Override
     public void onLeftClicked() {
-
+        int current = mPager.getCurrentItem();
+        if (current > 0) {
+            mPager.setCurrentItem(current - 1);
+        }
     }
 
-    private class CrawlResult {
+    private class PoolSideImageUrls {
         public List<String> sliderUrls = new ArrayList<>();
         public List<String> gridUrls = new ArrayList<>();
     }
 
-    private class CrawlTask extends AsyncTask<String, Void, CrawlResult> {
+    private class CrawlTask extends AsyncTask<String, Void, PoolSideImageUrls> {
         @Override
-        protected CrawlResult doInBackground(String[] params) {
-            CrawlResult result = null;
+        protected PoolSideImageUrls doInBackground(String[] params) {
+            Log.d(TAG, "Start crawl");
+            PoolSideImageUrls result = null;
             try {
-                result = new CrawlResult();
+                result = new PoolSideImageUrls();
                 Document doc = Jsoup.connect(params[0]).get();
 
                 Elements sliderContents = doc.select("div#slider li img");
@@ -88,27 +102,38 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
                 for (String url : gridContents.eachAttr("src")) {
                     result.gridUrls.add(SOURCE_DOMAIN + url);
                 }
+
+                saveToDB(result);
             } catch (IOException e) { // for Jsoup.connect
+                e.printStackTrace();
+            } catch (SQLException e) { // for saveToDB
+                Log.e(TAG, "Save to DB failed");
                 e.printStackTrace();
             }
             return result;
         }
 
         @Override
-        protected void onPostExecute(CrawlResult result) {
+        protected void onPostExecute(PoolSideImageUrls result) {
             if (result != null) {
-                sliderUrls.clear();
-                sliderUrls.addAll(result.sliderUrls);
-                gridUrls.clear();
-                gridUrls.addAll(result.gridUrls);
-                Log.d(TAG, sliderUrls.toString());
-                Log.d(TAG, gridUrls.toString());
-
-                mPagerAdapter.setImageUrls(sliderUrls);
+                update(result);
+                Log.d(TAG, "Loaded from crawling");
             } else {
-                // crawling failed
+                Log.d(TAG, "Crawling failed");
+                // TODO: crawling failed. show message
             }
             mLayout.setRefreshing(false);
+        }
+
+        private void saveToDB(PoolSideImageUrls urls) throws SQLException {
+            Log.d(TAG, "Start saving to DB");
+            PoolSideDataSource dataSource = new PoolSideDataSource(MainActivity.this);
+            dataSource.open();
+            dataSource.clear();
+            dataSource.insertCarouselImageUrl(urls.sliderUrls);
+            dataSource.insertGridImageUrl(urls.gridUrls);
+            dataSource.close();
+            Log.d(TAG, "Saving to DB done");
         }
     }
 
@@ -153,5 +178,48 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
             mUrls = urls;
             notifyDataSetChanged();
         }
+    }
+
+    private class LoadingFromDBTask extends AsyncTask<Void, Void, PoolSideImageUrls> {
+        @Override
+        protected PoolSideImageUrls doInBackground(Void... params) {
+            Log.d(TAG, "Try loading from db");
+            PoolSideDataSource dataSource = new PoolSideDataSource(MainActivity.this);
+            dataSource.open();
+            PoolSideImageUrls result = new PoolSideImageUrls();
+            result.sliderUrls = dataSource.getCarouselImageUrls();
+            result.gridUrls = dataSource.getGridImageUrls();
+            dataSource.close();
+            if (result.sliderUrls.size() > 0 && result.gridUrls.size() > 0) {
+                return result;
+            }
+            else {
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(PoolSideImageUrls result) {
+            if (result != null) {
+                Log.d(TAG, "Loaded from DB");
+                update(result);
+                mLayout.setRefreshing(false);
+            } else {
+                Log.d(TAG, "No data in DB");
+                // not saved on db. start crawl
+                reload();
+            }
+        }
+    }
+
+    private void update(PoolSideImageUrls urls) {
+        sliderUrls.clear();
+        sliderUrls.addAll(urls.sliderUrls);
+        gridUrls.clear();
+        gridUrls.addAll(urls.gridUrls);
+        Log.d(TAG, sliderUrls.toString());
+        Log.d(TAG, gridUrls.toString());
+
+        mPagerAdapter.setImageUrls(sliderUrls);
     }
 }
