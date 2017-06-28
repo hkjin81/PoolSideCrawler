@@ -3,17 +3,22 @@ package kr.hkjin.poolsidecrawler;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 
+import com.squareup.picasso.Picasso;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class PagerFragment extends Fragment {
+    private static final String TAG = "PagerFragment";
+
     private static final String ARG_IMAGE_URL = "image_url";
     private static final String ARG_LEFT_ENABLE = "left_enable";
     private static final String ARG_RIGHT_ENABLE = "right_enable";
@@ -79,6 +84,15 @@ public class PagerFragment extends Fragment {
         } else {
             mRightButton.setVisibility(View.INVISIBLE);
         }
+
+        Log.d(TAG, String.format("Image loading %s", mImageUrl));
+        Picasso.with(getContext())
+                .load(mImageUrl)
+                .placeholder(R.mipmap.ic_launcher_round)
+                .error(R.mipmap.ic_launcher_round)
+                .fit()
+                .centerInside()
+                .into(mImageView);
 
         return v;
     }
