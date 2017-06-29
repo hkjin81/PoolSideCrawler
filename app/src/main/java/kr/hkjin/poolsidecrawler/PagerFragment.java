@@ -3,11 +3,10 @@ package kr.hkjin.poolsidecrawler;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 
 import com.squareup.picasso.Picasso;
@@ -24,9 +23,9 @@ public class PagerFragment extends Fragment {
     private static final String ARG_RIGHT_ENABLE = "right_enable";
 
     @BindView(R.id.leftButton)
-    Button mLeftButton;
+    ImageButton mLeftButton;
     @BindView(R.id.rightButton)
-    Button mRightButton;
+    ImageButton mRightButton;
     @BindView(R.id.image)
     ImageView mImageView;
 
@@ -85,11 +84,10 @@ public class PagerFragment extends Fragment {
             mRightButton.setVisibility(View.INVISIBLE);
         }
 
-        Log.d(TAG, String.format("Image loading %s", mImageUrl));
         Picasso.with(getContext())
                 .load(mImageUrl)
-                .placeholder(R.mipmap.ic_launcher_round)
-                .error(R.mipmap.ic_launcher_round)
+                .placeholder(R.drawable.ic_action_picture)
+                .error(R.drawable.ic_action_picture)
                 .fit()
                 .centerInside()
                 .into(mImageView);

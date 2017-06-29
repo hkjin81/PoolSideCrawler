@@ -1,4 +1,4 @@
-package kr.hkjin.poolsidecrawler;
+package kr.hkjin.poolsidecrawler.db;
 
 import android.provider.BaseColumns;
 

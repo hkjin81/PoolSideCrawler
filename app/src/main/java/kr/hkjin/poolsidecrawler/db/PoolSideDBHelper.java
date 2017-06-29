@@ -1,11 +1,8 @@
-package kr.hkjin.poolsidecrawler;
+package kr.hkjin.poolsidecrawler.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-
-import kr.hkjin.poolsidecrawler.PoolSideContract.CarouselContent;
-import kr.hkjin.poolsidecrawler.PoolSideContract.GridContent;
 
 public class PoolSideDBHelper extends SQLiteOpenHelper {
     private static final String TEXT_TYPE = " TEXT";
@@ -13,20 +10,20 @@ public class PoolSideDBHelper extends SQLiteOpenHelper {
     private static final String COMMA_SEP = ",";
 
     private static final String SQL_CREATE_CAROUSEL_CONTENT =
-            "CREATE TABLE " + CarouselContent.TABLE_NAME + " (" +
-                    CarouselContent._ID + " INTEGER PRIMARY KEY," +
-                    CarouselContent.COLUMN_NAME_INDEX + INTEGER_TYPE + COMMA_SEP +
-                    CarouselContent.COLUMN_NAME_IMAGE_URL + TEXT_TYPE + " )";
+            "CREATE TABLE " + PoolSideContract.CarouselContent.TABLE_NAME + " (" +
+                    PoolSideContract.CarouselContent._ID + " INTEGER PRIMARY KEY," +
+                    PoolSideContract.CarouselContent.COLUMN_NAME_INDEX + INTEGER_TYPE + COMMA_SEP +
+                    PoolSideContract.CarouselContent.COLUMN_NAME_IMAGE_URL + TEXT_TYPE + " )";
     private static final String SQL_DELETE_CAROUSEL_CONTENT =
-            "DROP TABLE IF EXISTS " + CarouselContent.TABLE_NAME;
+            "DROP TABLE IF EXISTS " + PoolSideContract.CarouselContent.TABLE_NAME;
 
     private static final String SQL_CREATE_GRID_CONTENT =
-            "CREATE TABLE " + GridContent.TABLE_NAME + " (" +
-                    GridContent._ID + " INTEGER PRIMARY KEY," +
-                    GridContent.COLUMN_NAME_INDEX + INTEGER_TYPE + COMMA_SEP +
-                    GridContent.COLUMN_NAME_IMAGE_URL + TEXT_TYPE + " )";
+            "CREATE TABLE " + PoolSideContract.GridContent.TABLE_NAME + " (" +
+                    PoolSideContract.GridContent._ID + " INTEGER PRIMARY KEY," +
+                    PoolSideContract.GridContent.COLUMN_NAME_INDEX + INTEGER_TYPE + COMMA_SEP +
+                    PoolSideContract.GridContent.COLUMN_NAME_IMAGE_URL + TEXT_TYPE + " )";
     private static final String SQL_DELETE_GRID_CONTENT =
-            "DROP TABLE IF EXISTS " + GridContent.TABLE_NAME;
+            "DROP TABLE IF EXISTS " + PoolSideContract.GridContent.TABLE_NAME;
 
     public static final int DATABASE_VERSION = 1;
     public static final String DATABASE_NAME = "PoolSide.db";
