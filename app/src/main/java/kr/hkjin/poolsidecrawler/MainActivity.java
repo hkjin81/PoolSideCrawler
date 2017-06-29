@@ -1,9 +1,11 @@
 package kr.hkjin.poolsidecrawler;
 
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.GridLayout;
@@ -109,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
                 Log.d(TAG, "Loaded from crawling");
             } else {
                 Log.d(TAG, "Crawling failed");
-                // TODO: crawling failed. show message
+                showErrorDialog();
             }
             mSwipeRefreshLayout.setRefreshing(false);
         }
@@ -208,6 +210,24 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
         int current = mPager.getCurrentItem();
         if (current > 0) {
             mPager.setCurrentItem(current - 1);
+        }
+    }
+
+    private AlertDialog mDialog;
+    public void showErrorDialog() {
+        if (mDialog == null) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle(getString(R.string.error))
+                    .setMessage(getString(R.string.message_image_load_failed))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                            mDialog = null;
+                        }
+                    });
+            mDialog = builder.create();
+            mDialog.show();
         }
     }
 }
