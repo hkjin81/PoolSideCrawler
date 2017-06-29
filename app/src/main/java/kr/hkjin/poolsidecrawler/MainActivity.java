@@ -9,6 +9,9 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.GridLayout;
+
+import com.squareup.picasso.Picasso;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -24,17 +27,19 @@ import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements PagerFragment.Delegate {
     private static final String TAG = "MainActivity";
-    @BindView(R.id.layout) SwipeRefreshLayout mLayout;
-    @BindView(R.id.pager) ViewPager mPager;
+    @BindView(R.id.layout)
+    SwipeRefreshLayout mSwipeRefreshLayout;
+    @BindView(R.id.pager)
+    ViewPager mPager;
+    @BindView(R.id.grid)
+    GridLayout grid;
 
-    private List<String> sliderUrls = new ArrayList<>();
+    private List<String> carouselUrls = new ArrayList<>();
     private List<String> gridUrls = new ArrayList<>();
     private PagerAdapter mPagerAdapter;
 
     private static final String SOURCE_DOMAIN = "http://www.gettyimagesgallery.com";
     private static final String SOURCE_PATH = "/exhibitions/archive/poolside.aspx";
-
-    private PoolSideDBHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,13 +50,13 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
         mPagerAdapter = new PagerAdapter(getSupportFragmentManager());
         mPager.setAdapter(mPagerAdapter);
 
-        mLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 reload();
             }
         });
-        mLayout.setRefreshing(true);
+        mSwipeRefreshLayout.setRefreshing(true);
         tryLoadFromDB();
     }
 
@@ -80,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
     }
 
     private class PoolSideImageUrls {
-        public List<String> sliderUrls = new ArrayList<>();
+        public List<String> carouselUrls = new ArrayList<>();
         public List<String> gridUrls = new ArrayList<>();
     }
 
@@ -95,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
 
                 Elements sliderContents = doc.select("div#slider li img");
                 for (String url : sliderContents.eachAttr("src")) {
-                    result.sliderUrls.add(SOURCE_DOMAIN + url);
+                    result.carouselUrls.add(SOURCE_DOMAIN + url);
                 }
 
                 Elements gridContents = doc.select("div.gallery-item-group.exitemrepeater img.picture");
@@ -122,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
                 Log.d(TAG, "Crawling failed");
                 // TODO: crawling failed. show message
             }
-            mLayout.setRefreshing(false);
+            mSwipeRefreshLayout.setRefreshing(false);
         }
 
         private void saveToDB(PoolSideImageUrls urls) throws SQLException {
@@ -130,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
             PoolSideDataSource dataSource = new PoolSideDataSource(MainActivity.this);
             dataSource.open();
             dataSource.clear();
-            dataSource.insertCarouselImageUrl(urls.sliderUrls);
+            dataSource.insertCarouselImageUrl(urls.carouselUrls);
             dataSource.insertGridImageUrl(urls.gridUrls);
             dataSource.close();
             Log.d(TAG, "Saving to DB done");
@@ -187,13 +192,12 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
             PoolSideDataSource dataSource = new PoolSideDataSource(MainActivity.this);
             dataSource.open();
             PoolSideImageUrls result = new PoolSideImageUrls();
-            result.sliderUrls = dataSource.getCarouselImageUrls();
+            result.carouselUrls = dataSource.getCarouselImageUrls();
             result.gridUrls = dataSource.getGridImageUrls();
             dataSource.close();
-            if (result.sliderUrls.size() > 0 && result.gridUrls.size() > 0) {
+            if (result.carouselUrls.size() > 0 && result.gridUrls.size() > 0) {
                 return result;
-            }
-            else {
+            } else {
                 return null;
             }
         }
@@ -203,23 +207,46 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
             if (result != null) {
                 Log.d(TAG, "Loaded from DB");
                 update(result);
-                mLayout.setRefreshing(false);
+                mSwipeRefreshLayout.setRefreshing(false);
             } else {
                 Log.d(TAG, "No data in DB");
-                // not saved on db. start crawl
+                // No data on db. Start crawling
                 reload();
             }
         }
     }
 
     private void update(PoolSideImageUrls urls) {
-        sliderUrls.clear();
-        sliderUrls.addAll(urls.sliderUrls);
+        carouselUrls.clear();
+        carouselUrls.addAll(urls.carouselUrls);
         gridUrls.clear();
         gridUrls.addAll(urls.gridUrls);
-        Log.d(TAG, sliderUrls.toString());
-        Log.d(TAG, gridUrls.toString());
 
-        mPagerAdapter.setImageUrls(sliderUrls);
+        updateCarousel();
+        updateGrid();
     }
+
+    private void updateCarousel() {
+        mPagerAdapter.setImageUrls(carouselUrls);
+    }
+
+    private void updateGrid() {
+        for (String gridUrl : gridUrls) {
+            SquareImageView imageView = new SquareImageView(this);
+            grid.addView(imageView);
+
+            GridLayout.LayoutParams param =new GridLayout.LayoutParams();
+            param.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1);
+            imageView.setLayoutParams(param);
+
+            Picasso.with(this)
+                    .load(gridUrl)
+                    .placeholder(R.mipmap.ic_launcher_round)
+                    .error(R.mipmap.ic_launcher_round)
+                    .fit()
+                    .centerInside()
+                    .into(imageView);
+        }
+    }
+
 }
