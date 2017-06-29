@@ -65,6 +65,10 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
     }
 
     private void reload() {
+        carouselUrls.clear();
+        gridUrls.clear();
+        update();
+
         new CrawlTask().execute(SOURCE_DOMAIN + SOURCE_PATH);
     }
 
@@ -222,6 +226,10 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
         gridUrls.clear();
         gridUrls.addAll(urls.gridUrls);
 
+        update();
+    }
+
+    private void update() {
         updateCarousel();
         updateGrid();
     }
@@ -231,6 +239,7 @@ public class MainActivity extends AppCompatActivity implements PagerFragment.Del
     }
 
     private void updateGrid() {
+        grid.removeAllViews();
         for (String gridUrl : gridUrls) {
             SquareImageView imageView = new SquareImageView(this);
             grid.addView(imageView);
